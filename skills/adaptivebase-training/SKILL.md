@@ -1,0 +1,81 @@
+---
+name: adaptivebase-training
+description: Use when a connected AdaptiveBase athlete or coach wants to begin training, establish baselines, log completed sets, review progress, check daily sleep and recovery, identify gym equipment, adapt a program, or propose training for a consenting client. Do not use for unrelated questions or generic fitness advice without an AdaptiveBase request.
+---
+
+# AdaptiveBase training
+
+AdaptiveBase stores authoritative facts; the AI supplies conversation and reasoning.
+Retrieve current records instead of relying on conversation memory. Only a successful
+result proves a change. Never claim an attempted or failed write was saved.
+
+## Connect and discover
+
+Discover the 15 plugin tools and exact schemas. Use the names in the bundled
+[tool contracts](references/tools.md); the plugin endpoint does not use the native
+AgentCore prefix. Grouped tools take `action`, `input`, and, for writes, a unique
+UUID `idempotencyKey`. Live discovery wins over bundled contracts.
+
+Use `get_profile` to identify the account and `get_training_status` to check setup.
+If `requiresSetup`, direct the user to the returned `setupUrl`. Early access approval,
+sign-in, setup, and connector entitlement are distinct. Never request passwords,
+codes, tokens, payment details or keys in chat. AI-provider plans are separate.
+
+## Baseline and daily check-in
+
+1. `get_training_status` returns `context`, `baselines`, or a setup link. Missing
+   programs or measurements mean unknown, not zero or a saved recommendation.
+2. Ask goals, experience, schedule, session length, equipment, units/timezone, pain
+   and restrictions. `manage_training_plan` action `profile` saves only supported
+   profile fields; do not invent goal or injury fields outside the schema.
+3. Agree conservative, submaximal baseline assessments. Use `record_readiness`
+   action `assessment` with reported results, protocol and explicit units. Skipping
+   is valid. Never fabricate clearance or require painful or maximal efforts.
+4. Explain the starting plan and uncertainty. Only after agreement use
+   `manage_training_plan` action `update` with current expectedVersion and reason.
+
+At the first training interaction of each local day, inspect `context.dailyCheckIn`.
+For missing health, offer accessible measurements or reported sleep. Use
+`record_readiness` action `health` with local wake date, timezone, source and stable
+source record ID; include only known measurements. This does not read Apple Health.
+Keep HRV SDNN and RMSSD distinct; never sum competing sources. For missing recovery,
+ask subjective sleep quality, energy, motivation, soreness and pain; action `recovery`
+requires actual reported facts. Honor declines, never block workouts or repeatedly
+ask for today's recorded data. Measurements provide context, not a diagnosis.
+
+## Work out and record
+
+1. Read `get_today_workout`, status, current gym and recent exercise performance.
+   Review pain/recovery and confirm the intended workout.
+2. Resume an existing active session using `get_workout`; otherwise use
+   `record_workout` action `start` to snapshot the agreed prescription.
+3. Action `set` records completed work only. Resolve canonical exercise/session/set
+   IDs from retrieved records. Clarify load units, reps and required RIR; RPE alone
+   does not supply every required fact. API loads use pounds; convert kilograms
+   explicitly. Distinguish prescribed and performed work.
+4. Sets are immutable: there is no update_set. Explain correction limitations;
+   do not duplicate a set or claim it was edited.
+5. Action `exercise_complete` needs athlete confirmation. Action `complete` needs
+   confirmation that the session is finished and reported session RPE. Never
+   invent session RPE. Actions `run` and `mobility` record their required facts.
+
+Reuse the same idempotencyKey and identical arguments on retries of one logical
+write. Never add userId or infer access to another account. Reload on version
+conflict and ask again if the proposal changes. Do not diagnose pain or prescribe
+treatment; stop painful activity and direct concerning symptoms to professional care.
+
+## Equipment, programs and coaches
+
+Read [equipment and travel](references/equipment.md) for private photos and gyms.
+Use published exercise IDs from `browse_exercises`, confirmed inventory, known load
+limits and reported constraints. Rankings are not medical clearance or guarantees.
+
+Read adaptationPolicy: FIXED means portal edits; GUIDED means
+`manage_training_plan` action `propose` and athlete portal approval; FLEXIBLE permits
+only enabled bounded changes. Do not loosen controls or replace a plan to evade them.
+A saved template or proposed program is not an active program.
+
+Read [coach workflows](references/coaching.md) for client work. Server-side consent
+is required even for administrators. `get_progress` supplies deterministic analytics,
+records and trends; `get_exercise_history` supplies actual sets. Use returned metrics,
+not invented percentages or graphs. Estimated 1RM is not a measured maximum.
